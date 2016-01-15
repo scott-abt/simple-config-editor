@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
 merge a config change and commit it.
 
@@ -12,17 +12,27 @@ import getpass
 import argparse
 
 
-def make_changes(device):
+def make_changes(device, config_file):
     """
     If all has gone well up to here, you may want to merge the config or
     discard it.
     """
-    #merge the local config snip
-    device.load_merge_candidate(filename=default)
+    # merge the local config snip
+    device.load_merge_candidate(filename=config_file)
     # compare the config. If there is no diff, exit and move to next switch or
     # exit.
-    commit_result = device.commit_config()
-
+    if (device.compare_config()):
+        commit_answer = "n"
+        print(device.compare_config())
+        commit_answer = raw_input("Do you want to commit the changes? (y/N)")
+        if commit_answer is "y":
+            commit_result = device.commit_config()
+            print(commit_result)
+        else:
+            print("Rolling back to active configuration... ")
+            device.discard_config()
+    else:
+        print("There is no difference.")
 
 def open_device(device_ip, driver, creds_dict):
     """
@@ -31,7 +41,6 @@ def open_device(device_ip, driver, creds_dict):
     """
 
     for _user, _password in creds_dict.iteritems():
-        print(_user + " " + _password)
         _device = driver(device_ip, _user, _password)
         _count = 0
         try:
@@ -52,14 +61,16 @@ def main(default="config.cfg", username="user", password="password",
     """Open the device, merge the config and commit it."""
     driver = get_network_driver('junos')
 
+    # User could have passed an IP address or a path to a file in "switch"
     if ipv4.validate_ip(switch):
         # It's a single IP address, act on it and quit.
         creds_dict = {username: password}
         device = open_device(switch, driver, creds_dict)
 
         if device:
+            make_changes(device, default)
             device.close()
-            print("Device is closed")
+            print("{0} is closed".format(device.hostname))
         else:
             print("Sionara!")
     elif os.path.exists(switch):

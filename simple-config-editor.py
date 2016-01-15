@@ -34,30 +34,30 @@ def make_changes(device, config_file):
     else:
         print("There is no difference.")
 
+
 def open_device(device_ip, driver, creds_dict):
     """
-    Helper function to try all creds on each device.
-    returns an open device or None if all creds fail.
+    Helper function to try all creds on each device. Returns an open device or
+    None if all creds fail.
     """
-
     for _user, _password in creds_dict.iteritems():
         _device = driver(device_ip, _user, _password)
         _count = 0
         try:
             _device.open()
             return _device
-        except ConnectAuthError as cae:
+        except ConnectAuthError:
             # retry with available credentials until list is exhausted
             # if no credentials work, log an error.
             _count += 1
             print("Failed {0} out of {0} login attempts...".format(_count,
-                    len(creds_dict)))
+                  len(creds_dict)))
             continue
     return None
 
 
 def main(default="config.cfg", username="user", password="password",
-         switch="switch.conf"):
+         switch="switch.cfg"):
     """Open the device, merge the config and commit it."""
     driver = get_network_driver('junos')
 
@@ -74,8 +74,11 @@ def main(default="config.cfg", username="user", password="password",
         else:
             print("Sionara!")
     elif os.path.exists(switch):
-        # it's potentially a path to a file. Check that out
-        print("It's a file, Jim.")
+        # Open the file and read each line into a dict. Each line should be
+        # formatted as "username password"
+        switch_file = open(switch, 'r')
+        for line in switch_file:
+            print(line)
     else:
         print("It's not either of those things.")
 
@@ -87,12 +90,9 @@ if __name__ == "__main__":
     parser.add_argument('user', type=str, help='Username with access to the'
                         ' switch(es).')
     parser.add_argument('switch', type=str, help='Either a single IP address'
-        ' in X.X.X.X format, or a path to a file containing a list of switch IP'
-        ' addresses 1 per line.')
+                        ' in X.X.X.X format, or a path to a file containing a'
+                        ' list of switch IP addresses 1 per line.')
 
     args = parser.parse_args()
-
     password = getpass.getpass()
-
-
     main(args.config, args.user, password, args.switch)

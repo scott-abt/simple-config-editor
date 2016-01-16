@@ -11,6 +11,9 @@ import os
 import getpass
 import argparse
 
+class ConnectionFailure(Exception):
+    pass
+
 
 def make_changes(device, config_file):
     """
@@ -53,34 +56,22 @@ def open_device(device_ip, driver, creds_dict):
             print("Failed {0} out of {0} login attempts...".format(_count,
                   len(creds_dict)))
             continue
-    return None
+    raise ConnectionFailure
 
 
 def main(default="config.cfg", username="user", password="password",
          switch="switch.cfg"):
     """Open the device, merge the config and commit it."""
     driver = get_network_driver('junos')
+    creds_dict = {username: password}
+    device = open_device(switch, driver, creds_dict)
 
-    # User could have passed an IP address or a path to a file in "switch"
-    if ipv4.validate_ip(switch):
-        # It's a single IP address, act on it and quit.
-        creds_dict = {username: password}
-        device = open_device(switch, driver, creds_dict)
-
-        if device:
-            make_changes(device, default)
-            device.close()
-            print("{0} is closed".format(device.hostname))
-        else:
-            print("Sionara!")
-    elif os.path.exists(switch):
-        # Open the file and read each line into a dict. Each line should be
-        # formatted as "username password"
-        switch_file = open(switch, 'r')
-        for line in switch_file:
-            print(line)
+    if device:
+        make_changes(device, default)
+        device.close()
+        print("{0} is closed".format(device.hostname))
     else:
-        print("It's not either of those things.")
+        print("Sionara!")
 
 
 if __name__ == "__main__":
@@ -94,5 +85,15 @@ if __name__ == "__main__":
                         ' list of switch IP addresses 1 per line.')
 
     args = parser.parse_args()
-    password = getpass.getpass()
-    main(args.config, args.user, password, args.switch)
+    if ipv4.validate_ip(args.switch):
+        main(args.config, args.user, getpass.getpass(), args.switch)
+    elif os.path.exists(args.switch):
+        # get list of switches from the file and iterate through them.
+        switch_list_file = open(args.switch, 'r')
+        for switch_ip in switch_list_file:
+            try:
+                main(args.config, args.user, getpass.getpass(), switch_ip)
+            except:
+                ConnectionFailure
+    else:
+        raise ConnectionFailure

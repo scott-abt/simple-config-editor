@@ -55,7 +55,6 @@ def open_device(device_ip, driver, creds_dict):
             _count += 1
             print("Failed {0} out of {0} login attempts...".format(_count,
                   len(creds_dict)))
-            continue
     raise ConnectionFailure
 
 
@@ -93,7 +92,7 @@ if __name__ == "__main__":
         for switch_ip in switch_list_file:
             try:
                 main(args.config, args.user, getpass.getpass(), switch_ip)
-            except:
-                ConnectionFailure
+            except ConnectionFailure:
+                print("There was a problem connecting to {}".format(switch_ip))
     else:
         raise ConnectionFailure

@@ -28,7 +28,7 @@ def make_changes(device, config_file):
         commit_answer = "n"
         print(device.compare_config())
         commit_answer = raw_input("Do you want to commit the changes? (y/N)")
-        if commit_answer is "y":
+        if commit_answer.lower() == "y":
             commit_result = device.commit_config()
             print(commit_result)
         else:
@@ -84,14 +84,15 @@ if __name__ == "__main__":
                         ' list of switch IP addresses 1 per line.')
 
     args = parser.parse_args()
+    password = getpass.getpass()
     if ipv4.validate_ip(args.switch):
-        main(args.config, args.user, getpass.getpass(), args.switch)
+        main(args.config, args.user, password, args.switch)
     elif os.path.exists(args.switch):
         # get list of switches from the file and iterate through them.
         switch_list_file = open(args.switch, 'r')
         for switch_ip in switch_list_file:
             try:
-                main(args.config, args.user, getpass.getpass(), switch_ip)
+                main(args.config, args.user, password, switch_ip.rstrip())
             except ConnectionFailure:
                 print("There was a problem connecting to {}".format(switch_ip))
     else:

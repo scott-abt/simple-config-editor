@@ -77,16 +77,30 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process arguments")
     parser.add_argument('config', type=str, help='path to file with config'
                         ' snippet.')
-    parser.add_argument('user', type=str, help='Username with access to the'
-                        ' switch(es).')
     parser.add_argument('switch', type=str, help='Either a single IP address'
                         ' in X.X.X.X format, or a path to a file containing a'
                         ' list of switch IP addresses 1 per line.')
+    parser.add_argument('--user', type=str, help='Username with access '
+                        'to the switch(es).')
+    parser.add_argument('--creds_file', type=str, help='File containing '
+                        'list of credential pairs to try.')
 
     args = parser.parse_args()
-    password = getpass.getpass()
-    if ipv4.validate_ip(args.switch):
-        main(args.config, args.user, password, args.switch)
+    switch_ip = args.switch
+
+
+    if ipv4.validate_ip(args.switch): # These cases are redundant. reduce this code!!
+        if args.user:
+            password = getpass.getpass()
+        elif args.creds_file and os.path.exists(args.creds_file):
+            _creds_file = open(args.creds_file, 'r')
+            for _line in _creds_file:
+                username, password = _line.split(" ")
+                password.rstrip()
+        try:
+            main(args.config, args.user, password, switch_ip.rstrip())
+        except ConnectionFailure:
+            print("There was a problem connecting to {}".format(switch_ip))
     elif os.path.exists(args.switch):
         # get list of switches from the file and iterate through them.
         switch_list_file = open(args.switch, 'r')

@@ -5,9 +5,11 @@ merge a config change and commit it.
 Requires config.cfg with your config snippet inside at root directory.
 """
 from jnpr.junos import Device
+from jnpr.junos.exception import ProbeError, ConnectAuthError
 from iptools import ipv4
 import getpass
 import argparse
+import sys
 
 def make_changes(device, config_file):
     """
@@ -30,28 +32,29 @@ def make_changes(device, config_file):
     else:
         print("There is no difference.")
 
-
 def open_device(device_ip, creds_dict):
     #do this with pyez instead of napalm
     """
     Helper function to try all creds on each device. Returns an open device or
     None if all creds fail.
     """
-    print("Trying ".format(device_ip))
+    print("Trying {}".format(device_ip))
     for _user, _password in creds_dict.items():
-        _device = Device(device_ip, user=_user, passwd=_password)
+        _device = Device(device_ip, port=22, user=_user, passwd=_password, attempts=3, auto_probe=True)
         _count = 0
         try:
             _device.open()
             return _device
-        except Exception:
+        except ProbeError as proberr:
+            print(str(proberr) + " NetConf is not available")
+        except ConnectAuthError as e:
             # retry with available credentials until list is exhausted
             # if no credentials work, log an error.
             _count += 1
             print("Failed {0} out of {0} login attempts...".format(_count,
                   len(creds_dict)))
-        print(_device)
-
+            print(str(e) + " Incorrect username or password")
+        sys.exit(1)
 
 def main(default="config.cfg", username="user", password="password",
          switch="switch.cfg"):
@@ -59,7 +62,7 @@ def main(default="config.cfg", username="user", password="password",
     """Open the device, merge the config and commit it."""
     _device = open_device(switch, {username: password})
     print(_device.facts)
-
+    _device.close()
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process arguments")

@@ -52,7 +52,6 @@ def make_changes(device, config_file):
         print("There is no difference.")
 
 def open_device(device_ip, creds_dict):
-    #do this with pyez instead of napalm
     """
     Helper function to try all creds on each device. Returns an open device or
     None if all creds fail.
@@ -78,7 +77,6 @@ def open_device(device_ip, creds_dict):
 
 def main(config, username="user", password="password",
          switch="switch.cfg"):
-    # Do this with pyez instead of napalm.
     """Open the device, merge the config and commit it."""
     _device = open_device(switch, {username: password})
     print(_device.facts)

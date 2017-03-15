@@ -2,6 +2,6 @@ test*
 simple-virtenv
 *.pyc
 *.swp
-*.cfg
 output.txt
+config.set
 

@@ -6,7 +6,7 @@ Requires config.set with your config snippet inside at root directory.
 """
 from jnpr.junos import Device
 from jnpr.junos.utils.config import Config
-from jnpr.junos.exception import ProbeError, ConnectAuthError, CommitError
+from jnpr.junos.exception import ProbeError, ConnectAuthError, CommitError, ConfigLoadError
 from iptools import ipv4
 import getpass
 import argparse
@@ -19,8 +19,15 @@ def make_changes(device, config_file):
     """
     # merge the local config snip
 
-    _config = Config(device, mode="exclusive")
-    _config.load(path=config_file, merge=True)
+    try:
+        _config = Config(device, mode="exclusive")
+        _config.load(path=config_file, merge=True)
+    except ConfigLoadError as conferr:
+        if (conferr.errs[0]["message"] == "statement not found"):
+            pass
+        else:
+            raise
+
     print(_config)
 
     # compare the config. If there is no diff, exit and move to next switch or

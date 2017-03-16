@@ -82,8 +82,7 @@ def open_device(device_ip, creds_dict):
             print(str(e) + " Incorrect username or password")
         sys.exit(1)
 
-def main(config, username="user", password="password",
-         switch="switch.cfg"):
+def main(config, username, password, switch):
     """Open the device, merge the config and commit it."""
     _device = open_device(switch, {username: password})
     print(_device.facts)
@@ -92,18 +91,19 @@ def main(config, username="user", password="password",
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Process arguments")
-    parser.add_argument('--config', type=str, default="./config.set", 
-                        help='path to file with config snippet.')
-    parser.add_argument('--switch', type=str, help='Either a single IP address'
-                        ' in X.X.X.X format, or a path to a file containing a'
-                        ' list of switch IP addresses 1 per line.')
-    parser.add_argument('--user', type=str, help='Username with access '
-                        'to the switch(es).')
     parser.add_argument('--creds_file', type=str, help='File containing '
                         'list of credential pairs to try.')
+    parser.add_argument('--user', type=str, help='Username with access '
+                        'to the switch(es).')
+
+    required_args = parser.add_argument_group('required arguments')
+    required_args.add_argument('--switch', type=str, help='Either a single IP address'
+                        ' in X.X.X.X format, or a path to a file containing a'
+                        ' list of switch IP addresses 1 per line.', required=True)
+    required_args.add_argument('--config', type=str, default="./config.set", 
+                        help='path to file with config snippet.')
 
     args = parser.parse_args()
-    switch_ip = args.switch
 
     if args.user:
         password = getpass.getpass()
@@ -118,19 +118,17 @@ if __name__ == "__main__":
             password.rstrip()
 
     if ipv4.validate_ip(args.switch): # These cases are redundant. reduce this code!!
-        main(args.config, args.user, password, switch_ip.rstrip())
-    elif args.switch:
+        main(args.config, args.user, password, args.switch.rstrip())
+    else:
         # get list of switches from the file and iterate through them.
         try:
-            switch_list_file = open(switch_ip, 'r')
+            switch_list_file = open(args.switch, 'r')
         except Exception:
             raise
-        print(switch_ip)
+        print(args.switch)
         for ip_addr in switch_list_file:
             try:
                 print(ip_addr)
                 main(args.config, args.user, password, ip_addr.rstrip())
             except ConnectionFailure:
                 print("There was a problem connecting to {}".format(ip_addr))
-    else:
-        raise ConnectionFailure

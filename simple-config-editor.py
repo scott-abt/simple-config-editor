@@ -100,8 +100,8 @@ if __name__ == "__main__":
     required_args.add_argument('--switch', type=str, help='Either a single IP address'
                         ' in X.X.X.X format, or a path to a file containing a'
                         ' list of switch IP addresses 1 per line.', required=True)
-    required_args.add_argument('--config', type=str, default="./config.set", 
-                        help='path to file with config snippet.')
+    required_args.add_argument('--config', type=str, required=True,
+                               help='path to file with config snippet.')
 
     args = parser.parse_args()
 

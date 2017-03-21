@@ -17,10 +17,9 @@ def make_changes(device, config_file):
     If all has gone well up to here, you may want to merge the config or
     discard it.
     """
-    # merge the local config snip
-
     try:
         _config = Config(device, mode="exclusive")
+        _config.rollback(rb_id=0)
         _config.load(path=config_file, merge=True)
     except ConfigLoadError as conferr:
         if (conferr.errs[0]["message"] == "statement not found"):
@@ -28,10 +27,6 @@ def make_changes(device, config_file):
         else:
             raise
 
-    print(_config)
-
-    # compare the config. If there is no diff, exit and move to next switch or
-    # exit.
     if (_config.diff()):
         # check for diff
         print(_config.diff())
@@ -47,8 +42,8 @@ def make_changes(device, config_file):
                 raise
 
             try:
-                _config.commit(confirm=2)
-                _config.commit(comment="Change performed via automation")
+                _config.commit(confirm=2, timeout=120)
+                _config.commit(comment="Change performed via automation", timeout=120)
             except CommitError as ce:
                 raise
 
@@ -85,7 +80,6 @@ def open_device(device_ip, creds_dict):
 def main(config, username, password, switch):
     """Open the device, merge the config and commit it."""
     _device = open_device(switch, {username: password})
-    print(_device.facts)
     make_changes(_device, config)
     _device.close()
 
@@ -125,10 +119,9 @@ if __name__ == "__main__":
             switch_list_file = open(args.switch, 'r')
         except Exception:
             raise
-        print(args.switch)
         for ip_addr in switch_list_file:
             try:
-                print(ip_addr)
                 main(args.config, args.user, password, ip_addr.rstrip())
-            except ConnectionFailure:
-                print("There was a problem connecting to {}".format(ip_addr))
+            except:
+                print("There was a problem configuring {}".format(ip_addr))
+                sys.exit(1)

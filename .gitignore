@@ -4,4 +4,5 @@ simple-virtenv
 *.swp
 output.txt
 config.set
-
+notes
+switches.csv
